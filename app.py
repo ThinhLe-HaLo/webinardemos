@@ -7,11 +7,16 @@ from langchain.agents import initialize_agent, Tool
 app = Flask(__name__)
 
 # --- CẤU HÌNH ---
-os.environ["AZURE_OPENAI_API_KEY"] = "Erllz05hTVhX9qPyuQ5hfWRfnk0o8udR57U4f9zUCYhY1VhGYA6vJQQJ99CDACi0881XJ3w3AAABACOGGgKQ"
-os.environ["AZURE_OPENAI_ENDPOINT"] = "https://webinar-model.openai.azure.com/openai/v1/chat/completions"
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+
+# Kiểm tra nếu thiếu biến môi trường thì báo lỗi ngay để dễ debug
+if not AZURE_OPENAI_API_KEY or not AZURE_OPENAI_ENDPOINT:
+    raise ValueError("Thiếu cấu hình biến môi trường cho Azure OpenAI!")
 
 llm = AzureChatOpenAI(
-    azure_deployment="demo-model", 
+    azure_deployment=AZURE_OPENAI_DEPLOYMENT_NAME, 
     api_version="2023-05-15",
     temperature=0
 )
