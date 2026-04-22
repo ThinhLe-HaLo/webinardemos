@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 # --- CẤU HÌNH ---
 #AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
-#AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 
 # Kiểm tra nếu thiếu biến môi trường thì báo lỗi ngay để dễ debug
