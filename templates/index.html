@@ -1,34 +1,174 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>AI Research Assistant (Demo)</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Research Assistant</title>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; line-height: 1.6; }
-        #chat-box { border: 1px solid #ccc; padding: 20px; height: 300px; overflow-y: scroll; background: #f9f9f9; }
-        input { width: 80%; padding: 10px; }
-        button { padding: 10px 20px; cursor: pointer; background: #0078d4; color: white; border: none; }
+        :root {
+            --primary-color: #0078d4;
+            --bg-color: #f0f2f5;
+            --bot-msg-color: #ffffff;
+            --user-msg-color: #dcf8c6;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-color);
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+        }
+
+        .container { 
+            max-width: 900px; 
+            margin: auto; 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            height: 90vh; 
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        #chat-box { 
+            flex: 1;
+            padding: 20px; 
+            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            white-space: pre-wrap; /* Quan trọng: Giúp xuống dòng khi AI trả về \n */
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--user-msg-color);
+            border-bottom-right-radius: 2px;
+            color: #333;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background-color: var(--bot-msg-color);
+            border-bottom-left-radius: 2px;
+            border: 1px solid #e0e0e0;
+            color: #333;
+        }
+
+        .input-area { 
+            padding: 20px; 
+            display: flex; 
+            gap: 10px; 
+            border-top: 1px solid #eee;
+        }
+
+        input { 
+            flex: 1; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            outline: none;
+        }
+
+        input:focus { border-color: var(--primary-color); }
+
+        button { 
+            padding: 10px 25px; 
+            background: var(--primary-color); 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover { background: #005a9e; }
+        
+        button:disabled { background: #ccc; }
+
     </style>
 </head>
 <body>
-    <h2>AI Research Assistant (SSRF Demo)</h2>
-    <div id="chat-box"></div><br>
-    <input type="text" id="user-input" placeholder="Nhập yêu cầu (ví dụ: Tóm tắt nội dung link...)">
-    <button onclick="sendRequest()">Gửi</button>
 
-    <script>
-        async function sendRequest() {
-            const input = document.getElementById('user-input').value;
-            const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML += `<b>Bạn:</b> ${input}<br>`;
-            
+<div class="container">
+    <header>AI Research Assistant (Demo v2)</header>
+    
+    <div id="chat-box">
+        <div class="message bot-message">Chào bạn! Tôi là trợ lý AI. Hãy dán URL bài báo và yêu cầu tôi tóm tắt nhé.</div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Dán link hoặc nhập câu hỏi tại đây..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendRequest()" id="send-btn">Gửi</button>
+    </div>
+</div>
+
+<script>
+    async function sendRequest() {
+        const inputField = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatBox = document.getElementById('chat-box');
+        const text = inputField.value.trim();
+
+        if (!text) return;
+
+        // Thêm tin nhắn người dùng
+        chatBox.innerHTML += `<div class="message user-message">${text}</div>`;
+        inputField.value = '';
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Trạng thái đang xử lý
+        sendBtn.disabled = true;
+        const loadingId = "loading-" + Date.now();
+        chatBox.innerHTML += `<div class="message bot-message" id="${loadingId}">Đang suy nghĩ...</div>`;
+
+        try {
             const response = await fetch('/ask', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({prompt: input})
+                body: JSON.stringify({prompt: text}) // Khớp với Python bạn vừa sửa
             });
+            
             const data = await response.json();
-            chatBox.innerHTML += `<b>AI:</b> ${data.answer}<hr>`;
+            const loadingMsg = document.getElementById(loadingId);
+            
+            // Hiển thị câu trả lời (giữ nguyên định dạng xuống dòng)
+            loadingMsg.innerText = data.answer; 
+            
+        } catch (error) {
+            document.getElementById(loadingId).innerText = "Lỗi: Không thể kết nối đến máy chủ.";
+        } finally {
+            sendBtn.disabled = false;
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
-    </script>
+    }
+
+    function handleKeyPress(e) {
+        if (e.key === 'Enter') sendRequest();
+    }
+</script>
+
 </body>
 </html>
