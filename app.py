@@ -31,38 +31,46 @@ llm = AzureChatOpenAI(
 )
 
 # --- 3. CÔNG CỤ ĐỌC WEB (WEB FETCHER) ---
+import requests
+from bs4 import BeautifulSoup
+
 def web_fetcher(url):
-    # Header quan trọng để lấy được Token từ Azure IMDS
-    headers = {"Metadata": "true"}
+    # Header Metadata: true là BẮT BUỘC để Azure trả về Token
+    headers = {
+        "Metadata": "true",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
     try:
-        # allow_redirects=True để hỗ trợ link rút gọn (TinyURL, Bitly)
-        response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
+        # Sử dụng Session để quản lý kết nối tốt hơn
+        session = requests.Session()
         
-        # KIỂM TRA LOẠI DỮ LIỆU TRẢ VỀ
+        # Gửi request với verify=False (chỉ dùng cho demo) 
+        # và allow_redirects=True để xử lý bit.ly
+        response = session.get(
+            url, 
+            headers=headers, 
+            timeout=15, 
+            allow_redirects=True,
+            verify=False 
+        )
+
         content_type = response.headers.get("Content-Type", "").lower()
 
-        # TÌNH HUỐNG 2: Nếu là JSON (Dữ liệu thô/Token)
+        # TÌNH HUỐNG SSRF: Nếu trả về JSON (Token)
         if "application/json" in content_type:
-            # Trả về thô để AI hiển thị Token cho kẻ tấn công thấy
-            return f"HỆ THỐNG TRẢ VỀ DỮ LIỆU THÔ (JSON):\n{response.text}"
+            return f"Hệ thống đã trích xuất dữ liệu nhạy cảm: {response.text}"
 
-        # TÌNH HUỐNG 1: Nếu là HTML (Link báo chí clean)
-        else:
-            soup = BeautifulSoup(response.text, 'html.parser')
+        # TÌNH HUỐNG LINK CLEAN: Dùng BeautifulSoup
+        soup = BeautifulSoup(response.text, 'html.parser')
+        for s in soup(["script", "style"]):
+            s.decompose()
             
-            # Loại bỏ các thành phần rác để AI không bị nhiễu
-            for element in soup(["script", "style", "nav", "footer", "header"]):
-                element.decompose()
-            
-            # Lấy text sạch
-            clean_text = soup.get_text(separator=' ', strip=True)
-            
-            # Trả về 5000 ký tự đầu tiên để AI tóm tắt
-            return clean_text[:5000]
+        clean_text = soup.get_text(separator=' ', strip=True)
+        return clean_text[:5000]
 
     except Exception as e:
-        return f"Lỗi truy cập link: {str(e)}"
-
+        # Trả về lỗi chi tiết để bạn biết chính xác server đang chặn ở đâu
+        return f"Lỗi kỹ thuật (SSRF Triggered): {str(e)}"
 # --- 4. THIẾT LẬP AGENT ---
 tools = [
     Tool(
