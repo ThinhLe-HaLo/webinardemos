@@ -13,7 +13,7 @@ app = Flask(__name__)
 AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 
 # Kiểm tra nếu thiếu biến môi trường thì báo lỗi ngay để dễ debug
-if not AZURE_OPENAI_API_KEY or not AZURE_OPENAI_ENDPOINT:
+if not AZURE_OPENAI_ENDPOINT or not AZURE_OPENAI_DEPLOYMENT_NAME:
     raise ValueError("Thiếu cấu hình biến môi trường cho Azure OpenAI!")
 
 # --- XÁC THỰC BẰNG MANAGED IDENTITY ---
