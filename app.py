@@ -32,29 +32,36 @@ llm = AzureChatOpenAI(
 
 # --- 3. CÔNG CỤ ĐỌC WEB (WEB FETCHER) ---
 def web_fetcher(url):
-    # Header đặc biệt để "nịnh" Azure IMDS trả về Token
+    # Header quan trọng để lấy được Token từ Azure IMDS
     headers = {"Metadata": "true"}
     try:
-        # allow_redirects=True giúp xử lý các trường hợp link rút gọn để bypass bộ lọc
+        # allow_redirects=True để hỗ trợ link rút gọn (TinyURL, Bitly)
         response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
         
-        # --- TÌNH HUỐNG 2: Nếu trả về là JSON (Thường là Token từ Azure) ---
-        if "application/json" in response.headers.get("Content-Type", ""):
-            # Trả về chuỗi JSON thô để AI hiển thị trực tiếp cho kẻ tấn công
-            return f"DỮ LIỆU HỆ THỐNG TRÍCH XUẤT ĐƯỢC: {response.text}"
+        # KIỂM TRA LOẠI DỮ LIỆU TRẢ VỀ
+        content_type = response.headers.get("Content-Type", "").lower()
+
+        # TÌNH HUỐNG 2: Nếu là JSON (Dữ liệu thô/Token)
+        if "application/json" in content_type:
+            # Trả về thô để AI hiển thị Token cho kẻ tấn công thấy
+            return f"HỆ THỐNG TRẢ VỀ DỮ LIỆU THÔ (JSON):\n{response.text}"
+
+        # TÌNH HUỐNG 1: Nếu là HTML (Link báo chí clean)
+        else:
+            soup = BeautifulSoup(response.text, 'html.parser')
             
-        # --- TÌNH HUỐNG 1: Nếu là link báo chí bình thường ---
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Lấy nội dung chính, loại bỏ script và style để AI dễ đọc
-        for script_or_style in soup(["script", "style"]):
-            script_or_style.decompose()
+            # Loại bỏ các thành phần rác để AI không bị nhiễu
+            for element in soup(["script", "style", "nav", "footer", "header"]):
+                element.decompose()
             
-        clean_text = soup.get_text(separator=' ', strip=True)
-        return clean_text[:6000] # Giới hạn để không tốn quá nhiều Token
-        
+            # Lấy text sạch
+            clean_text = soup.get_text(separator=' ', strip=True)
+            
+            # Trả về 5000 ký tự đầu tiên để AI tóm tắt
+            return clean_text[:5000]
+
     except Exception as e:
-        return f"Lỗi kết nối khi truy cập link: {str(e)}"
+        return f"Lỗi truy cập link: {str(e)}"
 
 # --- 4. THIẾT LẬP AGENT ---
 tools = [
