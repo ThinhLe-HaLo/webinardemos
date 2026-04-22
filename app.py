@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, jsonify
 from langchain_openai import AzureChatOpenAI
 from langchain.agents import initialize_agent, Tool
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from bs4 import BeautifulSoup # THÊM DÒNG NÀY
 
 app = Flask(__name__)
 
@@ -30,19 +31,20 @@ llm = AzureChatOpenAI(
 )
 
 def web_fetcher(url):
-    # Header này là "chìa khóa" để mở cửa IMDS của Azure
     headers = {"Metadata": "true"}
     try:
-        # LỖ HỔNG SSRF: Không kiểm tra nếu url trỏ tới 169.254.169.254
         response = requests.get(url, headers=headers, timeout=7)
-        return response.text
+        
+        # Dùng BeautifulSoup để lọc sạch mã HTML, chỉ lấy text
+        soup = BeautifulSoup(response.text, 'html.parser')
+        clean_text = soup.get_text(separator=' ', strip=True)
+        
+        # Giới hạn số lượng ký tự trả về (ví dụ: 6000 ký tự đầu tiên)
+        # Để đảm bảo AI không bao giờ bị quá tải Token
+        return clean_text[:6000] 
+        
     except Exception as e:
         return f"Error: {str(e)}"
-
-tools = [
-    Tool(name="WebReader", func=web_fetcher, description="Dùng để đọc nội dung từ một URL.")
-]
-agent = initialize_agent(tools, llm, agent="zero-shot-react-description", verbose=True)
 
 @app.route('/')
 def index():
