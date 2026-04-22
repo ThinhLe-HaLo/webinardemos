@@ -80,24 +80,22 @@ def index():
 @app.route('/ask', methods=['POST'])
 def ask():
     data = request.json
-    user_input = data.get('message')
+    
+    # 1. HTML gửi nhãn 'prompt', nên Python sẽ tìm 'prompt'
+    user_input = data.get('prompt') 
 
     if not user_input:
-        # Bạn có thể giữ nguyên chữ "response" ở đây hoặc đổi thành "answer" đều được, 
-        # nhưng tốt nhất là đổi cho đồng bộ.
         return jsonify({"answer": "Bạn chưa nhập câu hỏi!"})
 
     try:
-        # Gọi Agent xử lý (sử dụng invoke cho các bản LangChain mới)
+        # Gọi Agent xử lý
         result = agent.invoke({"input": user_input})
         
-        # SỬA CHỖ NÀY: Đổi "response" thành "answer"
+        # 2. HTML chờ nhận nhãn 'answer', nên Python trả về 'answer'
         return jsonify({"answer": result["output"]})
         
     except Exception as e:
         print(f"Lỗi hệ thống: {str(e)}")
-        
-        # SỬA CHỖ NÀY: Đổi "response" thành "answer"
         return jsonify({"answer": f"Xin lỗi, tôi gặp trục trặc khi xử lý: {str(e)}"})
 
 if __name__ == '__main__':
