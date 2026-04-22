@@ -81,17 +81,24 @@ def index():
 def ask():
     data = request.json
     user_input = data.get('message')
-    
+
     if not user_input:
-        return jsonify({"response": "Bạn chưa nhập câu hỏi!"})
+        # Bạn có thể giữ nguyên chữ "response" ở đây hoặc đổi thành "answer" đều được, 
+        # nhưng tốt nhất là đổi cho đồng bộ.
+        return jsonify({"answer": "Bạn chưa nhập câu hỏi!"})
 
     try:
         # Gọi Agent xử lý (sử dụng invoke cho các bản LangChain mới)
         result = agent.invoke({"input": user_input})
-        return jsonify({"response": result["output"]})
+        
+        # SỬA CHỖ NÀY: Đổi "response" thành "answer"
+        return jsonify({"answer": result["output"]})
+        
     except Exception as e:
         print(f"Lỗi hệ thống: {str(e)}")
-        return jsonify({"response": f"Xin lỗi, tôi gặp trục trặc khi xử lý: {str(e)}"})
+        
+        # SỬA CHỖ NÀY: Đổi "response" thành "answer"
+        return jsonify({"answer": f"Xin lỗi, tôi gặp trục trặc khi xử lý: {str(e)}"})
 
 if __name__ == '__main__':
     # Chạy local để test, trên Azure sẽ dùng Gunicorn
