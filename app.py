@@ -3,19 +3,27 @@ import requests
 from flask import Flask, render_template, request, jsonify
 from langchain_openai import AzureChatOpenAI
 from langchain.agents import initialize_agent, Tool
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
 app = Flask(__name__)
 
 # --- CẤU HÌNH ---
-AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
-AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+#AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+#AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 
 # Kiểm tra nếu thiếu biến môi trường thì báo lỗi ngay để dễ debug
 if not AZURE_OPENAI_API_KEY or not AZURE_OPENAI_ENDPOINT:
     raise ValueError("Thiếu cấu hình biến môi trường cho Azure OpenAI!")
 
+# --- XÁC THỰC BẰNG MANAGED IDENTITY ---
+credential = DefaultAzureCredential()
+token_provider = get_bearer_token_provider(
+    credential, "https://cognitiveservices.azure.com/.default"
+)
+
 llm = AzureChatOpenAI(
+    azure_ad_token_provider=token_provider,
     azure_deployment=AZURE_OPENAI_DEPLOYMENT_NAME, 
     api_version="2023-05-15",
     temperature=0
